@@ -125,7 +125,7 @@ total = sum(test_result.values())
 print(f"\n\033[31m[당신의 전공 적합도]\033[0m")
 for i in test_result:
     amount = test_result[i]/total*100
-    print(f"{pad(i, 10)} : ", end="")
+    print(f"{pad(i, 10)} : ", end='')
     for j in range(int(amount//5)): print("\033[102m ", end="\033[0m")
     for j in range(20-int(amount//5)): print("\033[47m ", end="\033[0m")
     print()
@@ -134,5 +134,5 @@ mx = max(test_result.values())
 result = []
 for i, j in test_result.items():
     if j == mx: result.append(i)
-print("\n\033[31m[당신의 가장 적합한 전공]\033[0m",end=' --> ')
+print("\n\033[31m[당신의 가장 적합한 전공]\033[0m",end=' >>> ')
 print(*result, sep=', ')
