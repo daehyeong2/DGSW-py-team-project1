@@ -1,5 +1,10 @@
 import os
 os.system('clear')
+from wcwidth import wcswidth
+
+def pad(text, width):
+    pad_len = width - wcswidth(text)
+    return text + ' ' * pad_len
 
 print("""
 -----------------------------
@@ -48,7 +53,7 @@ questions = [
     },
     {
         "content": "직접 만든 것으로 돈을 벌어보고 싶다.",
-        "field": ["게임", "앱"]
+        "field": ["게임"]
     },
     {
         "content": "논리적이고 체계적으로 무언가를 설계하는 것이 좋다.",
@@ -56,7 +61,7 @@ questions = [
     },
     {
         "content": "내가 만든 것을 다른 사람이 즐겨줬으면 좋겠다.",
-        "field": ["게임", "앱"]
+        "field": ["게임"]
     },
     {
         "content": "해커가 멋있다고 생각한다.",
@@ -92,7 +97,7 @@ questions = [
     },
     {
         "content": "기계로만 개발하는것보다 사용자와 소통하면서 제작하는것이 좋다.",
-        "field": ["프론트엔드", "앱"]
+        "field": ["프론트엔드"]
     },
 ]
 
@@ -116,16 +121,18 @@ for idx in range(len(questions)):
     for field in question["field"]:
         test_result[field] += score
 
-total = 0
 total = sum(test_result.values())
 print(f"\n\033[31m[당신의 전공 적합도]\033[0m")
 for i in test_result:
-    print(f"{i} : {test_result[i]/total*100:.1f}%")
+    amount = test_result[i]/total*100
+    print(f"{pad(i, 10)} : ", end="")
+    for j in range(int(amount//5)): print("\033[102m ", end="\033[0m")
+    for j in range(20-int(amount//5)): print("\033[47m ", end="\033[0m")
+    print()
 
-maxLi = []
-for i in test_result:
-    if i == max(test_result):
-        maxLi.append(i)
+mx = max(test_result.values())
+result = []
+for i, j in test_result.items():
+    if j == mx: result.append(i)
 print("\n\033[31m[당신의 가장 적합한 전공]\033[0m",end=' --> ')
-for i in maxLi:
-    print(i,end=' ')
+print(*result, sep=', ')
