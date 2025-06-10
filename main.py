@@ -116,4 +116,16 @@ for idx in range(len(questions)):
     for field in question["field"]:
         test_result[field] += score
 
-print(test_result)
+total = 0
+total = sum(test_result.values())
+print(f"\n\033[31m[당신의 전공 적합도]\033[0m")
+for i in test_result:
+    print(f"{i} : {test_result[i]/total*100:.1f}%")
+
+maxLi = []
+for i in test_result:
+    if i == max(test_result):
+        maxLi.append(i)
+print("\n\033[31m[당신의 가장 적합한 전공]\033[0m",end=' --> ')
+for i in maxLi:
+    print(i,end=' ')
