@@ -14,6 +14,7 @@ print("""
 """)
 input("[ENTER]를 눌러 시험을 시작하세요!\n")
 
+# 각 전공별 적합도 점수 저장
 test_result = {
     "프론트엔드": 0,
     "백엔드": 0,
@@ -22,6 +23,7 @@ test_result = {
     "게임": 0
 }
 
+# 각 분야별로 얻을 수 있는 최대 점수를 저장
 max_scores = {
     "프론트엔드": 0,
     "백엔드": 0,
@@ -30,11 +32,12 @@ max_scores = {
     "게임": 0
 }
 
+# 질문
 questions = [
     {
         "content": "정보를 단순히 나열하기보다, 보는 사람이 이해하기 쉽고 보기 좋게 배치하며 디자인하는 것에 더 신경 쓰는 편이다.",
-        "plus_field": ["프론트엔드", "앱"],
-        "minus_field": ["백엔드", "보안"]
+        "plus_field": ["프론트엔드", "앱"], # 적합도 점수에 플러스
+        "minus_field": ["백엔드", "보안"] # 적합도 점수에 마이너스 
     },
     {
         "content": "어려운 문제가 풀리지 않아서 며칠동안 풀더라도 결국 문제를 찾아 해결했을 때의 성취감이 매우 크다.",
@@ -148,20 +151,24 @@ questions = [
     }
 ]
 
+# 최대 점수 2 또는 -2 이므로 전공별로 2점씩 누적 (나중에 퍼센트 계산에 활용)
 for question in questions:
     for field in question["plus_field"]:
         max_scores[field] += 2
     for field in question["minus_field"]:
         max_scores[field] += 2
 
+# 문항 번호 및 질문 출력
 for idx in range(len(questions)):
     question = questions[idx]
     os.system("clear")
     print(f"""
-    \033[36m[{idx+1}/{len(questions)}] \033[0m{question["content"]}
+    \033[36m[{idx+1}/{len(questions)}] \033[0m{question["content"]} 
     
     \033[33m1: \033[0m전혀 그렇지 않다. \033[33m2: \033[0m그렇지 않다. \033[33m3: \033[0m보통이다. \033[33m4: \033[0m그렇다. \033[33m5: \033[0m매우 그렇다. 
-    """)
+    """) 
+
+    # 사용자가 옳은 입력을 할때까지 입력 받기
     score = 0
     while True:
         try:
@@ -171,18 +178,23 @@ for idx in range(len(questions)):
             else: break
         except ValueError:
             print("올바른 숫자를 입력해 주세요. (1~5)")
-    score -= 3
+    
+    score -= 3 # 3을 중립값으로 지정 // 1 → -2  / 2 → -1  /  3 → 0 (중립)  / 4 → +1  /  5 → +2 
+
+    # 점수가 양수면 plus_field에 점수 더함
     if score > 0:
         for field in question["plus_field"]:
             test_result[field] += score
+    # 점수가 음수면 minus_field에 점수 절댓값(양수)로 바꾸고 더함
     elif score < 0:
         for field in question["minus_field"]:
             test_result[field] += abs(score)
 
 os.system("clear")
 
+# 전공 적합도 출력
 print(f"\n\033[33m[당신의 전공 적합도]\033[0m")
-mx = 0
+mx = 0 # 가장 높은 적합도 저장 변수
 result = []
 order = []
 for field in test_result:
@@ -190,13 +202,17 @@ for field in test_result:
     if max_score == 0:
         amount = 0
     else:
-        amount = test_result[field] / max_score * 100
+        amount = test_result[field] / max_score * 100 # 각 분야 전공 적합도 퍼센트 계산
+
+# 가장 높은 적합도 리스트에 저장
     if amount == mx:
         result.append(field)
     elif amount > mx:
         mx = amount
         result = [field]
     order.append((amount, field))
+
+# 전공별 적합도 막대 그래프 출력 (100% 기준으로 20칸 출력)
 order.sort(reverse=True)
 for amount, field in order:
     print(f"{pad(field, 10)} : ", end="")
@@ -204,5 +220,6 @@ for amount, field in order:
     for j in range(20-int(amount//5)): print("\033[47m ", end="\033[0m")
     print(f" \033[90m({amount:.1f}%)", end="\033[0m\n")
 
+# 최고 점수 적합도 출력
 print("\n\033[33m[당신의 가장 적합한 전공]\033[0m",end=' --> ')
 print(*result, sep=', ')
