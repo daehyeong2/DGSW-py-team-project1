@@ -1,6 +1,65 @@
 import os
 os.system('clear')
 from wcwidth import wcswidth
+from dotenv import load_dotenv
+import requests
+
+load_dotenv()
+
+openai_api_key = os.getenv("OPENAI_API_KEY")
+
+targets = {
+    "high_reason": "직무가 적합하게 나온 이유를 분석하세요.",
+    "low_reason": "직무에 반대되는 점을 분석해 문제점과 해결 방안을 제시하세요."
+}
+
+examples = [
+    """당신은 요소 색깔이나 애니메이션과 같은 화면 반응을 세세하게 조절하는 것을 좋아한다고 답하였던 것을 보아 프론트엔드에 적합할 것입니다.""",
+    """당신은 팀 프로젝트보다 개인 프로젝트를 더 좋아한다는 답변을 하였고, 이는 자칫 잘못하면 디자인 팀과 협업하는 것이 힘들수도 있어 개선이 필요합니다. 협업 경험을 쌓으며 팀 프로젝트에 익숙해 지세요. 분석은 적합한 직무에 관련된 것만 진행하세요. (프론트엔드인데 보안을 피드백하지 마라는 것입니다.)"""
+]
+
+def getAnalysis(questions, field, target):
+    prompt = f"""
+    당신은 개발 직무 적성 평가 시험 결과를 분석하는 전문가입니다.
+    직무 적성 평가는 개발 직무 중 자신이 어떤 직무에 적합할지 검사하는 시험입니다.
+    20개 내외의 질문이 존재하고, 각각 질문에 그렇다에 대답했을 때 점수를 주는 영역인 plus_field와
+    아니다에 대답했을 때 점수를 주는 영역인 minus_field가 존재합니다.
+    또한, 해당 질문에 대한 사용자의 응답이 answer에 기록됩니다.
+    예시:
+    ---
+    [
+      {{
+        "content": "버튼 색깔이나 움직임 같은 화면 반응을 세세하게 조절하는 걸 좋아한다.",
+        "plus_field": ["프론트엔드", "앱"],
+        "minus_field": ["백엔드"],
+        "answer": "그렇다"
+      }}
+    ]
+    ---
+    이 각각의 질문들을 분석해 {field} 개발 {targets[target]}
+    응답은 분석 결과만 포함하고, 최대한 짧게 핵심만 추려내고, 빠르게 읽을 수 있도록 하세요.
+    최대 300글자 이내로 응답하세요.
+    예시:
+    ---
+    {examples[0] if target=="high_reason" else examples[1]}
+    ---
+    
+    그럼, 사용자의 응답 정보를 제공하겠습니다.
+    아래 데이터를 기반으로 분석을 시작해 주세요.
+    {questions}
+    """
+    res = requests.post("https://api.openai.com/v1/responses", json = {
+        "model": "gpt-4.1",
+        "input": prompt,
+    }, headers = {
+        "content-type": "application/json",
+        "Authorization": f"Bearer {openai_api_key}",
+    })
+    if not res.ok:
+        return False
+    else:
+        result = res.json()["output"][0]["content"][0]["text"]
+        return result
 
 def pad(text, width):
     pad_len = width - wcswidth(text)
@@ -36,8 +95,8 @@ max_scores = {
 questions = [
     {
         "content": "정보를 단순히 나열하기보다, 보는 사람이 이해하기 쉽고 보기 좋게 배치하며 디자인하는 것에 더 신경 쓰는 편이다.",
-        "plus_field": ["프론트엔드", "앱"], # 적합도 점수에 플러스
-        "minus_field": ["백엔드", "보안"] # 적합도 점수에 마이너스 
+        "plus_field": ["프론트엔드", "앱"], # 응답이 그렇다에 가까울 때 플러스할 분야
+        "minus_field": ["백엔드", "보안"] # 응답이 아니다에 가까울 때 마이너스할 분야
     },
     {
         "content": "어려운 문제가 풀리지 않아서 며칠동안 풀더라도 결국 문제를 찾아 해결했을 때의 성취감이 매우 크다.",
@@ -158,6 +217,8 @@ for question in questions:
     for field in question["minus_field"]:
         max_scores[field] += 2
 
+answers = ["전혀 그렇지 않다", "그렇지 않다", "보통이다", "그렇다", "매우 그렇다"]
+
 # 문항 번호 및 질문 출력
 for idx in range(len(questions)):
     question = questions[idx]
@@ -179,7 +240,9 @@ for idx in range(len(questions)):
         except ValueError:
             print("올바른 숫자를 입력해 주세요. (1~5)")
     
-    score -= 3 # 3을 중립값으로 지정 // 1 → -2  / 2 → -1  /  3 → 0 (중립)  / 4 → +1  /  5 → +2 
+    questions[idx]["answer"] = answers[score-1]
+
+    score -= 3 # 3을 중립값으로 지정 // 1 → -2  / 2 → -1  /  3 → 0 (중립)  / 4 → +1  /  5 → +2
 
     # 점수가 양수면 plus_field에 점수 더함
     if score > 0:
@@ -223,3 +286,16 @@ for amount, field in order:
 # 최고 점수 적합도 출력
 print("\n\033[33m[당신의 가장 적합한 전공]\033[0m",end=' --> ')
 print(*result, sep=', ')
+
+try:
+    high_reason = getAnalysis(questions, ", ".join(result), "high_reason")
+    if not high_reason: raise Exception
+    print(f"\n\033[33m[{", ".join(result)} 개발 직무가 적합한 이유]\033[0m")
+    print(high_reason)
+
+    low_reason = getAnalysis(questions, ", ".join(result), "low_reason")
+    if not low_reason: raise Exception
+    print(f"\n\033[33m[{", ".join(result)} 개발 직무를 잘하기 위해 보완해야 하는 점]\033[0m")
+    print(low_reason)
+except:
+    print("AI 생성 중 에러가 발생했습니다.")
