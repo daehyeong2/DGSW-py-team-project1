@@ -66,6 +66,28 @@ def getAnalysis(questions, field, target):
         return result
 
 # 텍스트 출력 정렬
+def printSuitableJob(order, high_reason = "", low_reason = ""):
+    os.system("clear")
+    print("\n\033[33m[당신의 전공별 적합도]\033[0m")
+    # 전공별 적합도 막대 그래프 출력 (100% 기준으로 20칸 출력, 1칸 당 5%)
+    for amount, field in order:
+        print(f"{pad(field, 10)} : ", end="")
+        for j in range(int(amount // 5)): print("\033[106m ", end="\033[0m")
+        for j in range(20 - int(amount // 5)): print("\033[47m ", end="\033[0m")
+        print(f" \033[90m({amount:.1f}%)", end="\033[0m\n")
+
+    # 최고 점수 적합도 출력
+    print("\n\033[33m[당신의 가장 적합한 전공]\033[0m", end=' --> ')
+    print(*result, sep=', ')
+
+    print(f"\n\033[33m[{", ".join(result)} 개발 직무가 적합한 이유]\033[0m")
+    if high_reason: print(high_reason)
+    else: print("로딩 중..")
+
+    print(f"\n\033[33m[{", ".join(result)} 개발 직무를 잘하기 위해 보완해야 하는 점]\033[0m")
+    if low_reason: print(low_reason)
+    else: print("로딩 중..")
+
 def pad(text, width):
     pad_len = width - wcswidth(text)
     return text + ' ' * pad_len
@@ -280,28 +302,18 @@ for field in test_result:
         result = [field]
     order.append((amount, field))
 
-# 전공별 적합도 막대 그래프 출력 (100% 기준으로 20칸 출력)
+# 적합도가 높은 순으로 출려하기 위해 정렬 (내림차순)
 order.sort(reverse=True)
-for amount, field in order:
-    print(f"{pad(field, 10)} : ", end="")
-    for j in range(int(amount//5)): print("\033[106m ", end="\033[0m")
-    for j in range(20-int(amount//5)): print("\033[47m ", end="\033[0m")
-    print(f" \033[90m({amount:.1f}%)", end="\033[0m\n")
-
-# 최고 점수 적합도 출력
-print("\n\033[33m[당신의 가장 적합한 전공]\033[0m",end=' --> ')
-print(*result, sep=', ')
+printSuitableJob(order)
 
 # AI로 해당 개발 직무가 적합한 이유 출력
 try:
     high_reason = getAnalysis(questions, ", ".join(result), "high_reason")
-    if not high_reason: raise Exception
-    print(f"\n\033[33m[{", ".join(result)} 개발 직무가 적합한 이유]\033[0m")
-    print(high_reason)
+    if type(high_reason) == bool: raise Exception
+    printSuitableJob(order, high_reason)
 
     low_reason = getAnalysis(questions, ", ".join(result), "low_reason")
-    if not low_reason: raise Exception
-    print(f"\n\033[33m[{", ".join(result)} 개발 직무를 잘하기 위해 보완해야 하는 점]\033[0m")
-    print(low_reason)
+    if type(low_reason) == bool: raise Exception
+    printSuitableJob(order, high_reason, low_reason)
 except:
     print("AI 생성 중 에러가 발생했습니다.")
