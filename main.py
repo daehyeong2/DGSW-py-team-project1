@@ -1,23 +1,26 @@
 import os
-os.system('clear')
-from wcwidth import wcswidth
+os.system('clear') # 콘솔 화면 초기화
+from wcwidth import wcswidth # 텍스트 너비 계산 (길이 정렬용)
 from dotenv import load_dotenv
 import requests
 
-load_dotenv()
+load_dotenv() # .env 파일의 환경 변수 불러옴
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
+# 분석 목적별 프롬프트 문장
 targets = {
     "high_reason": "직무가 적합하게 나온 이유를 분석하세요.",
     "low_reason": "직무에 반대되는 점을 분석해 문제점과 해결 방안을 제시하세요."
 }
 
+# AI가 응답하는 예시
 examples = [
     """당신은 요소 색깔이나 애니메이션과 같은 화면 반응을 세세하게 조절하는 것을 좋아한다고 답하였던 것을 보아 프론트엔드에 적합할 것입니다.""",
     """당신은 팀 프로젝트보다 개인 프로젝트를 더 좋아한다는 답변을 하였고, 이는 자칫 잘못하면 디자인 팀과 협업하는 것이 힘들수도 있어 개선이 필요합니다. 협업 경험을 쌓으며 팀 프로젝트에 익숙해 지세요. 분석은 적합한 직무에 관련된 것만 진행하세요. (프론트엔드인데 보안을 피드백하지 마라는 것입니다.)"""
 ]
 
+# 사용자의 답변을 바탕으로 분석 요청 함수
 def getAnalysis(questions, field, target):
     prompt = f"""
     당신은 개발 직무 적성 평가 시험 결과를 분석하는 전문가입니다.
@@ -55,12 +58,14 @@ def getAnalysis(questions, field, target):
         "content-type": "application/json",
         "Authorization": f"Bearer {openai_api_key}",
     })
+    # 응답이 정상인지 확인
     if not res.ok:
         return False
     else:
         result = res.json()["output"][0]["content"][0]["text"]
         return result
 
+# 텍스트 출력 정렬
 def pad(text, width):
     pad_len = width - wcswidth(text)
     return text + ' ' * pad_len
@@ -258,8 +263,8 @@ os.system("clear")
 # 전공 적합도 출력
 print(f"\n\033[33m[당신의 전공 적합도]\033[0m")
 mx = 0 # 가장 높은 적합도 저장 변수
-result = []
-order = []
+result = [] # 최고 적합 전공 저장
+order = [] # 정렬용 리스트
 for field in test_result:
     max_score = max_scores[field]
     if max_score == 0:
@@ -287,6 +292,7 @@ for amount, field in order:
 print("\n\033[33m[당신의 가장 적합한 전공]\033[0m",end=' --> ')
 print(*result, sep=', ')
 
+# AI로 해당 개발 직무가 적합한 이유 출력
 try:
     high_reason = getAnalysis(questions, ", ".join(result), "high_reason")
     if not high_reason: raise Exception
