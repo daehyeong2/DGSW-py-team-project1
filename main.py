@@ -210,7 +210,7 @@ questions = [
     }
 ]
 
-# 최대 점수 2 또는 -2 이므로 전공별로 2점씩 누적 (나중에 퍼센트 계산에 활용)
+# 최대 점수 2 또는 -2 이므로 해당 전공에 2점씩 누적 (나중에 퍼센트 계산에 활용)
 for question in questions:
     for field in question["plus_field"]:
         max_scores[field] += 2
@@ -244,11 +244,11 @@ for idx in range(len(questions)):
 
     score -= 3 # 3을 중립값으로 지정 // 1 → -2  / 2 → -1  /  3 → 0 (중립)  / 4 → +1  /  5 → +2
 
-    # 점수가 양수면 plus_field에 점수 더함
+    # 점수가 양수면 plus_field에 있는 분야에 각각 점수 더함
     if score > 0:
         for field in question["plus_field"]:
             test_result[field] += score
-    # 점수가 음수면 minus_field에 점수 절댓값(양수)로 바꾸고 더함
+    # 점수가 음수면 minus_field에 있는 분야에 점수 절댓값(양수)으로 바꾸고 더함
     elif score < 0:
         for field in question["minus_field"]:
             test_result[field] += abs(score)
