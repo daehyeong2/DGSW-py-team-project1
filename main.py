@@ -1,11 +1,24 @@
 import os
 os.system('clear') # 콘솔 화면 초기화
 from wcwidth import wcswidth # 텍스트 너비 계산 (길이 정렬용)
-from dotenv import load_dotenv
-import requests
+from dotenv import load_dotenv # env 파일 로딩용
+import requests # API 요청용
+import pyfiglet # 인트로 화면에 글자 표시하는 용
+import time # 인트로 화면에 애니메이션을 적용하는 용
+from colorama import init, Fore, Style # 인트로 화면에 색깔을 적용하는 용
 
-load_dotenv() # .env 파일의 환경 변수 불러옴
+# .env 파일의 환경 변수 불러옴
+load_dotenv()
 
+# 색깔 기본 세팅
+init(autoreset=True)
+
+# 색깔 정의
+text_color = Fore.CYAN
+border_color = Fore.YELLOW
+prompt_color = Fore.GREEN
+
+# OpenAI API 사용을 위해 시크릿 키 가져오기
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 # 분석 목적별 프롬프트 문장
@@ -62,11 +75,13 @@ def getAnalysis(questions, field, target):
     if not res.ok:
         return False
     else:
+        # 결과 데이터를 추출해 반환
         result = res.json()["output"][0]["content"][0]["text"]
         return result
 
-# 텍스트 출력 정렬
+# 출력 함수 (인수를 바꿔 쉽게 출력 내용 변경 가능, 재사용 가능)
 def printSuitableJob(order, high_reason = "", low_reason = ""):
+    # 출력 전 콘솔 클리어
     os.system("clear")
     print("\n\033[33m[당신의 전공별 적합도]\033[0m")
     # 전공별 적합도 막대 그래프 출력 (100% 기준으로 20칸 출력, 1칸 당 5%)
@@ -76,31 +91,58 @@ def printSuitableJob(order, high_reason = "", low_reason = ""):
         for j in range(20 - int(amount // 5)): print("\033[47m ", end="\033[0m")
         print(f" \033[90m({amount:.1f}%)", end="\033[0m\n")
 
-    # 최고 점수 적합도 출력
+    # 가장 적합한 전공을 출력
     print("\n\033[33m[당신의 가장 적합한 전공]\033[0m", end=' --> ')
     print(*result, sep=', ')
 
+    # 해당 직무가 적합한 이유를 인수로 넘겨받았다면 출력, 그렇지 않다면 api 요청이 처리 중이므로 "로딩 중.." 출력
     print(f"\n\033[33m[{", ".join(result)} 개발 직무가 적합한 이유]\033[0m")
     if high_reason: print(high_reason)
     else: print("로딩 중..")
 
+    # 해당 직무를 잘하기 위해 보완해야하는 점을 인수로 넘겨받았다면 출력, 그렇지 않다면 api 요청이 처리 중이므로 "로딩 중.." 출력
     print(f"\n\033[33m[{", ".join(result)} 개발 직무를 잘하기 위해 보완해야 하는 점]\033[0m")
     if low_reason: print(low_reason)
     else: print("로딩 중..")
 
-def pad(text, width):
+# 텍스트 길이(글자 수가 아닌 실제 출력 길이)를 기준으로 가로 크기를 맞추는 맞추는 함수
+def pad(text, width, content = " "):
     pad_len = width - wcswidth(text)
-    return text + ' ' * pad_len
+    return text + content * pad_len
 
-print("""
------------------------------
-- FindIT
-- 당신의 전공을 찾아드립니다.
------------------------------
-""")
-input("[ENTER]를 눌러 시험을 시작하세요!\n")
 
-# 각 전공별 적합도 점수 저장
+# FindIT 글자를 큰 배너로 변환
+banner = pyfiglet.figlet_format("FindIT")
+# 배너를 라인별로 나눠서 리스트로 만듬
+lines = banner.split("\n")[:-2]
+# 출력할 배너의 가로 크기를 정의
+width_size = 50
+# 첫번째 줄과 마지막 줄의 테두리 모양을 정의
+border = "+" + pad("-", 52, "-") + "+"
+
+# 테두리 + 지연 출력
+print(border_color + border)
+for i in range(len(lines)):
+    # 애니메이션을 위한 시간 지연
+    time.sleep(0.3)
+    # i번째 line과 중간 테두리 출력
+    print(border_color + "| " + text_color + pad(lines[i], width_size) + border_color + " |")
+    if i == len(lines) - 1:
+        # 마지막 줄의 경우, 텍스트까지 출력
+        time.sleep(0.3)
+        print(border_color + "| " + text_color + pad("", width_size) + border_color + " |")
+        time.sleep(0.3)
+        print(border_color + "| " + text_color + pad("- 당신이 어떤 직무에 적합한지 궁금하신가요?", width_size) + border_color + " |")
+        time.sleep(0.3)
+        print(border_color + "| " + text_color + pad("- 바로 시험을 시작해 보세요!", width_size) + border_color + " |")
+time.sleep(0.3)
+print(border_color + border)
+time.sleep(0.3)
+
+# 엔터를 눌렀을 때 시작되도록 input을 이용
+input("[ENTER]를 눌러 시험을 시작하기\n")
+
+# 각 전공별 적합도 테스트 점수 저장
 test_result = {
     "프론트엔드": 0,
     "백엔드": 0,
@@ -109,7 +151,7 @@ test_result = {
     "게임": 0
 }
 
-# 각 분야별로 얻을 수 있는 최대 점수를 저장
+# 각 직무 별로 얻을 수 있는 최대 점수를 저장
 max_scores = {
     "프론트엔드": 0,
     "백엔드": 0,
@@ -121,9 +163,9 @@ max_scores = {
 # 질문
 questions = [
     {
-        "content": "정보를 단순히 나열하기보다, 보는 사람이 이해하기 쉽고 보기 좋게 배치하며 디자인하는 것에 더 신경 쓰는 편이다.",
-        "plus_field": ["프론트엔드", "앱"], # 응답이 그렇다에 가까울 때 플러스할 분야
-        "minus_field": ["백엔드", "보안"] # 응답이 아니다에 가까울 때 마이너스할 분야
+        "content": "정보를 단순히 나열하기보다, 보는 사람이 이해하기 쉽고 보기 좋게 배치하며 디자인하는 것에 더 신경 쓰는 편이다.", # 질문 내용
+        "plus_field": ["프론트엔드", "앱"], # 응답이 그렇다에 가까울 때 점수를 줄 분야
+        "minus_field": ["백엔드", "보안"] # 응답이 아니다에 가까울 때 점수를 줄 분야
     },
     {
         "content": "어려운 문제가 풀리지 않아서 며칠동안 풀더라도 결국 문제를 찾아 해결했을 때의 성취감이 매우 크다.",
@@ -244,6 +286,7 @@ for question in questions:
     for field in question["minus_field"]:
         max_scores[field] += 2
 
+# 응답 필드
 answers = ["전혀 그렇지 않다", "그렇지 않다", "보통이다", "그렇다", "매우 그렇다"]
 
 # 문항 번호 및 질문 출력
