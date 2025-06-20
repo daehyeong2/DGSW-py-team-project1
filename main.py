@@ -120,7 +120,7 @@ width_size = 50
 # 첫번째 줄과 마지막 줄의 테두리 모양을 정의
 border = "+" + pad("-", 52, "-") + "+"
 
-# 테두리 + 지연 출력
+# 테두리 출력
 print(border_color + border)
 for i in range(len(lines)):
     # 애니메이션을 위한 시간 지연
@@ -345,7 +345,7 @@ for field in test_result:
         result = [field]
     order.append((amount, field))
 
-# 적합도가 높은 순으로 출려하기 위해 정렬 (내림차순)
+# 적합도가 높은 순으로 출력하기 위해 정렬 (내림차순)
 order.sort(reverse=True)
 printSuitableJob(order)
 
